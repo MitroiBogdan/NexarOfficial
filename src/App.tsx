@@ -33,18 +33,37 @@ function ScrollToTop() {
 	return null;
 }
 
-// Hook care detectează când utilizatorul revine în tab și reîncarcă pagina
+// Hook cu flag pentru reload controlat
 function useAppVisibility() {
+	const location = useLocation();
+
 	useEffect(() => {
+		const handleReload = () => {
+			if (
+				location.pathname === "/" ||
+				location.pathname.startsWith("/profil") ||
+				location.pathname.startsWith("/anunt") ||
+				location.pathname.startsWith("/admin")
+			) {
+				if (!sessionStorage.getItem("reloaded")) {
+					sessionStorage.setItem("reloaded", "true");
+					window.location.reload();
+				}
+			}
+		};
+
 		const handleVisibilityChange = () => {
 			if (document.visibilityState === "visible") {
-				window.location.reload();
+				handleReload();
 			}
 		};
 
 		const handleFocus = () => {
-			window.location.reload();
+			handleReload();
 		};
+
+		// Curățăm flag-ul la montare pentru a permite reload-ul data viitoare
+		sessionStorage.removeItem("reloaded");
 
 		document.addEventListener("visibilitychange", handleVisibilityChange);
 		window.addEventListener("focus", handleFocus);
@@ -53,14 +72,15 @@ function useAppVisibility() {
 			document.removeEventListener("visibilitychange", handleVisibilityChange);
 			window.removeEventListener("focus", handleFocus);
 		};
-	}, []);
+	}, [location.pathname]);
 }
 
-function App() {
-	useAppVisibility(); // activează logica de reload
+// Componentă care conține logica după Router
+function AppContent() {
+	useAppVisibility();
 
 	return (
-		<Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+		<>
 			<ScrollToTop />
 			<div className="min-h-screen bg-nexar-light flex flex-col">
 				<Header />
@@ -88,6 +108,14 @@ function App() {
 				</main>
 				<Footer />
 			</div>
+		</>
+	);
+}
+
+function App() {
+	return (
+		<Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+			<AppContent />
 		</Router>
 	);
 }
